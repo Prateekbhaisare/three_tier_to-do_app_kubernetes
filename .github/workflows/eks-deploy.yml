@@ -1,10 +1,7 @@
-name: Three-Tier EKS Deploy Pipeline
+name: EKS Deploy Pipeline
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 permissions:
   id-token: write
@@ -13,7 +10,7 @@ permissions:
 env:
   AWS_REGION: us-east-1
   EKS_CLUSTER_NAME: three-tier-cluster
-  AWS_ROLE_ARN: arn:aws:iam::791296380741:role/GitHubActions-EKS-Role
+  AWS_ROLE_ARN: arn:aws:iam::791296380741:role/GitHubActionsEKSRole
   NAMESPACE: three-tier
 
 jobs:
@@ -33,7 +30,7 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     # ---------------- KUBECONFIG ----------------
-    - name: Update kubeconfig
+    - name: Configure kubeconfig
       run: |
         aws eks update-kubeconfig \
           --region $AWS_REGION \
@@ -42,23 +39,26 @@ jobs:
     # ---------------- NAMESPACE ----------------
     - name: Ensure namespace exists
       run: |
-        kubectl create namespace $NAMESPACE \
-          --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
     # ---------------- DATABASE ----------------
     - name: Deploy MongoDB
       run: |
-        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/secrets.yaml
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/deployment.yaml
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/service.yaml
 
     # ---------------- BACKEND ----------------
     - name: Deploy Backend
       run: |
-        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Backend/
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Backend/deployment.yaml
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Backend/service.yaml
 
     # ---------------- FRONTEND ----------------
     - name: Deploy Frontend
       run: |
-        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Frontend/
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Frontend/deployment.yaml
+        kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Frontend/service.yaml
 
     # ---------------- INGRESS ----------------
     - name: Deploy Ingress

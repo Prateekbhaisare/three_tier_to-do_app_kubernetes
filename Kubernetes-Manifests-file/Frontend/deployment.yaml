@@ -25,12 +25,21 @@ spec:
         - name: ecr-registry-secret
       containers:
         - name: frontend
-          image: 323001028681.dkr.ecr.us-east-1.amazonaws.com/three-tier/frontend:v4
+          image: 791296380741.dkr.ecr.us-east-1.amazonaws.com/three-tier-frontend:latest
           imagePullPolicy: Always
           env:
-            # Backend service URL inside Kubernetes
             - name: REACT_APP_BACKEND_URL
               value: "http://api:3500/api/tasks"
           ports:
-            - containerPort: 80   # ⚠️ React apps normally run on 3000
+            - containerPort: 80
+
+          # 🔥 REQUIRED FOR HPA
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
 

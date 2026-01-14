@@ -9,7 +9,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  EKS_CLUSTER_NAME: three-tier-cluster
+  EKS_CLUSTER_NAME: fresh-k8s-cluster
   AWS_ROLE_ARN: arn:aws:iam::791296380741:role/GitHubActionsEKSRole
   NAMESPACE: three-tier
 

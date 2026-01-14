@@ -4,10 +4,11 @@ metadata:
   name: frontend
   namespace: three-tier
 spec:
+  type: ClusterIP
   selector:
     role: frontend
   ports:
-    - port: 3000        # ✅ MUST MATCH INGRESS
-      targetPort: 3000 # containerPort
-  type: ClusterIP
-
+    - port: 3000        # 👈 Service port
+      targetPort: 3000 # 👈 Container port
+      protocol: TCP
+ 

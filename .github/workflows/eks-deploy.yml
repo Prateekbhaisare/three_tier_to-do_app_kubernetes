@@ -1,6 +1,9 @@
 name: Deploy to EKS
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -9,7 +12,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  EKS_CLUSTER_NAME: three-tier-cluster
+  EKS_CLUSTER_NAME: fresh-k8s-cluster
   AWS_ROLE_ARN: arn:aws:iam::791296380741:role/GitHubActionsEKSRole
   NAMESPACE: three-tier
 
@@ -18,66 +21,66 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # ---------------- CHECKOUT ----------------
+    #  CHECKOUT 
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # ---------------- AWS AUTH (OIDC) ----------------
+    #  AWS AUTH (OIDC) 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: ${{ env.AWS_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
 
-    # ---------------- INSTALL kubectl ----------------
+    #  INSTALL kubectl 
     - name: Install kubectl
       run: |
         curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/
 
-    # ---------------- KUBECONFIG (MOST IMPORTANT) ----------------
+    #  KUBECONFIG (MOST IMPORTANT) 
     - name: Configure kubeconfig
       run: |
         aws eks update-kubeconfig \
           --region $AWS_REGION \
           --name $EKS_CLUSTER_NAME
 
-    # ---------------- VERIFY CLUSTER ACCESS ----------------
+    # VERIFY CLUSTER ACCESS 
     - name: Verify cluster access
       run: |
         kubectl get nodes
 
-    # ---------------- NAMESPACE ----------------
+    # NAMESPACE 
     - name: Create namespace if not exists
       run: |
         kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-    # ---------------- DATABASE ----------------
+    # DATABASE 
     - name: Deploy Database
       run: |
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/secrets.yaml
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/deployment.yaml
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Database/service.yaml
 
-    # ---------------- BACKEND ----------------
+    # BACKEND 
     - name: Deploy Backend
       run: |
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Backend/deployment.yaml
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Backend/service.yaml
 
-    # ---------------- FRONTEND ----------------
+    # FRONTEND 
     - name: Deploy Frontend
       run: |
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Frontend/deployment.yaml
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/Frontend/service.yaml
 
-    # ---------------- INGRESS ----------------
+    # INGRESS 
     - name: Deploy Ingress
       run: |
         kubectl apply -n $NAMESPACE -f Kubernetes-Manifests-file/ingress.yaml
 
-    # ---------------- VERIFY ----------------
+    # VERIFY 
     - name: Verify deployment
       run: |
         kubectl get pods -n $NAMESPACE
